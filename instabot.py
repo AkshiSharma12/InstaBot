@@ -125,6 +125,41 @@ def like_a_post(insta_username):
   else:
       print 'Your like was unsuccessful. Try again!'
 
+def recent_like():
+    request_url=(BASE_URL+ 'users/self/media/liked?access_token=%s') % (AS)
+    print 'Get request url : %s' %(request_url)
+    own_media=requests.get(request_url).json()
+
+    if own_media['meta']['code'] == 200:
+        if len(own_media['data']):
+            image_name = own_media['data'][0]['id'] + '.jpeg'
+            image_url = own_media['data'][0]['images']['standard_resolution']['url']
+            urllib.urlretrieve(image_url, image_name)
+            print 'Your image has been downloaded!'
+        else:
+            print 'No recent media liked!'
+    else:
+        print 'Status code other than 200 received!'
+
+
+def get_comment_list(insta_username):
+    media_id=get_post_id(insta_username)
+    request_url=(BASE_URL+ 'media/%s/comments?access_token=%s') %(media_id,AS)
+    print 'Get request url : %s' %(request_url)
+    comment_list=requests.get(request_url).json()
+
+    if comment_list['meta']['code']==200:
+
+        if len(comment_list['data']):
+            for x in range(0,len(comment_list['data'])):
+                comment_text=comment_list['data'][x]['text']
+                print "Comment List: %s" %(comment_text)
+
+        else:
+            print 'There is no comment on this post!'
+    else:
+        print 'Status code other than 200 received!'
+
 
 
 def post_a_comment(insta_username):
@@ -159,6 +194,7 @@ def delete_negative_comment(insta_username):
                     print 'DELETE request url : %s' % (delete_url)
                     delete_info = requests.delete(delete_url).json()
 
+
                     if delete_info['meta']['code'] == 200:
                         print 'Comment successfully deleted!\n'
                     else:
@@ -178,15 +214,29 @@ def target_comments(insta_username):
 
     if caption_info['meta']['code'] == 200:
         if len(caption_info['data']):
-            return caption_info['data'][0]['text']
+            for y in range(0,len(caption_info['data'])):
+             caption_text=caption_info['data'][y]['caption']['text']
+             caption = caption_text.split(" ")
+             if 'Shopping' in caption:
+                print 'Read Caption: %s' % (caption)
+                media_id = get_post_id(insta_username)
+                comment_text = "AMAZON Monday Deals Week. Get your free gift card worth 5000. Only a few days left!. Get it "
+                payload = {"access_token": AS, "text": comment_text}
+                request_url = (BASE_URL + 'media/%s/comments') % (media_id)
+                print 'POST request url : %s' % (request_url)
+
+                make_comment = requests.post(request_url, payload).json()
+
+                if make_comment['meta']['code'] == 200:
+                    print "Successfully Posted Targetted Comment!"
+                else:
+                    print "Unable to add comment. Try again!"
         else:
             print 'There is no caption on the post!'
             exit()
     else:
         print 'Status code other than 200 received!'
         exit()
-
-
 
 
 def start_bot():
@@ -198,12 +248,13 @@ def start_bot():
         print "b.Get details of a user by username\n"
         print "c.Get your own recent post\n"
         print "d.Get the recent post of a user by username\n"
-        print "e.Get a list of people who have liked the recent post of a user\n"
+        print "e.Get recent media liked by the user\n"
         print "f.Like the recent post of a user\n"
         print "g.Get a list of comments on the recent post of a user\n"
         print "h.Make a comment on the recent post of a user\n"
         print "i.Delete negative comments from the recent post of a user\n"
-        print "j.Exit"
+        print "j.Target comment on posts based on caption\n"
+        print "k.Exit\n"
 
         choice = raw_input("Enter you choice: ")
         if choice == "a":
@@ -217,11 +268,9 @@ def start_bot():
             insta_username = raw_input("Enter the username of the user: ")
             get_user_post(insta_username)
         elif choice=="e":
-           insta_username = raw_input("Enter the username of the user: ")
-           get_like_list(insta_username)
+           recent_like()
         elif choice=="f":
-           insta_username = raw_input("Enter the username of the user: ")
-           like_a_post(insta_username)
+           like_a_post()
         elif choice=="g":
            insta_username = raw_input("Enter the username of the user: ")
            get_comment_list(insta_username)
@@ -232,8 +281,10 @@ def start_bot():
            insta_username = raw_input("Enter the username of the user: ")
            delete_negative_comment(insta_username)
         elif choice == "j":
-            insta_username=raw_input("Enter the username of the user:")
-            target_comments(insta_username)
+           insta_username=raw_input("Enter the username of the user: ")
+           target_comments(insta_username)
+        elif choice=="k":
+           exit()
         else:
             print "wrong choice"
 
